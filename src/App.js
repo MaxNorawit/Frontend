@@ -1,23 +1,28 @@
-import logo from './logo.svg';
-import './App.css';
-
+import React from "react";
+import { Routes, Route } from "react-router-dom";
+import { Provider } from "react-redux";
+import { store } from './store';
+import Product from "./shop";
+import SignIn from "./login";
+import Register from "./register";
+import History from "./history";
+import Backend from "./backend";
+import Backend2 from "./backend2";
 function App() {
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
+    <div>
+      <Provider store={store}>
+
+        <Routes>
+          <Route path="/" element={<Product />} />
+          <Route path="/login" element={<SignIn />} />
+          <Route path="/register" element={<Register />} />
+          <Route path="/history" element={<History />} />
+          <Route path="/backend" element={<Backend />} />
+          <Route path="/backend2" element={<Backend2 />} />
+          <Route path="*" element={<Product />} />
+        </Routes>
+        </Provider>
     </div>
   );
 }
