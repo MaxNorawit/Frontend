@@ -11,28 +11,50 @@ import Grid from "@mui/material/Grid";
 import Swal from "sweetalert2";
 import withReactContent from "sweetalert2-react-content";
 import { useNavigate } from "react-router-dom";
-import { useSelector } from "react-redux";
+import { useSelector, useDispatch } from "react-redux";
 import Nevbar from "./nev";
 const MySwal = withReactContent(Swal);
 
 function Product() {
+  const dispatch = useDispatch();
   const navigate = useNavigate();
   const [productList, setproductList] = useState([]);
   const [isOutOfStock, setIsOutOfStock] = useState(false);
   const counter = useSelector((state) => state.counter);
   function getproduct() {
-    Axios.get("https://amused-ray-nightgown.cyclic.app/app/product").then((response) => {
-      if (response.data <= 0) {
-        setIsOutOfStock(true);
-      } else {
-        setproductList(response.data);
+    Axios.get("https://amused-ray-nightgown.cyclic.app/app/product").then(
+      (response) => {
+        if (response.data <= 0) {
+          setIsOutOfStock(true);
+        } else {
+          setproductList(response.data);
+        }
       }
-    });
+    );
+  }
 
+  async function getData() {
+    try {
+      const data = localStorage.getItem("token");
+      if (data) {
+        Axios.defaults.headers.common["Authorization"] = `Bearer ${data}`;
+        Axios.defaults.headers.post["Content-Type"] = "application/json";
+        const res1 = await Axios.get("https://amused-ray-nightgown.cyclic.app/me");
+        await dispatch({ type: "FETCHDATA", payload: await res1.data.message });
+      } else {
+        await localStorage.removeItem("token");
+        await dispatch({ type: "FETCHDATA", payload: {} });
+      }
+    } catch (err) {
+      await localStorage.removeItem("token");
+      await dispatch({ type: "FETCHDATA", payload: {} });
+      await navigate("/login");
+    }
   }
 
   useEffect(() => {
     getproduct();
+    getData();
     //getData();
   }, []);
 
@@ -51,15 +73,49 @@ function Product() {
       await navigate("/login");
     } else {
       try {
-        const res = await Axios.get("https://amused-ray-nightgown.cyclic.app/buy/" + id, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-        });
+        const res = await Axios.get(
+          "https://amused-ray-nightgown.cyclic.app/buy/" + id,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
+            },
+          }
+        );
         getproduct();
         await MySwal.fire("Success", res.data.message, "success");
         await navigate("/history");
+      } catch (err) {
+        if (err.response.data.status === "jwt") {
+          await localStorage.removeItem("token");
+          await MySwal.fire("Oops...", err.response.data.message, "error");
+          return await navigate("/login");
+        } else {
+          return MySwal.fire("Oops...", err.response.data.message, "error");
+        }
+      }
+    }
+  };
+
+  const del = async (id) => {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      await MySwal.fire("error", "กรุณาข้าสู่ระบบ", "error");
+      await navigate("/login");
+    } else {
+      try {
+        const res = await Axios.get(
+          "https://amused-ray-nightgown.cyclic.app/delet/" + id,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
+            },
+          }
+        );
+        getproduct();
+        await MySwal.fire("Success", res.data.message, "success");
+        await navigate("/");
       } catch (err) {
         if (err.response.data.status === "jwt") {
           await localStorage.removeItem("token");
@@ -118,6 +174,18 @@ function Product() {
                     >
                       สั่งซื้อ
                     </Button>
+                    {counter.rank == 1 ? (
+                      <Button
+                        variant="contained"
+                        color="error"
+                        onClick={() => del(val.id)}
+                        sx={{ml:1}}
+                      >
+                        ลบ
+                      </Button>
+                    ) : (
+                      <div></div>
+                    )}
                   </Box>
                 </Card>
               </Grid>
